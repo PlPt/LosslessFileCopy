@@ -1,0 +1,9 @@
+D:\Daten\Petzoldt\Pascal\Entwicklung\C#\LosslessFileCopy\LosslessFileCopy\bin\Debug\LosslessFileCopy.exe.config
+D:\Daten\Petzoldt\Pascal\Entwicklung\C#\LosslessFileCopy\LosslessFileCopy\bin\Debug\LosslessFileCopy.exe
+D:\Daten\Petzoldt\Pascal\Entwicklung\C#\LosslessFileCopy\LosslessFileCopy\bin\Debug\LosslessFileCopy.pdb
+D:\Daten\Petzoldt\Pascal\Entwicklung\C#\LosslessFileCopy\LosslessFileCopy\obj\Debug\LosslessFileCopy.csprojResolveAssemblyReference.cache
+D:\Daten\Petzoldt\Pascal\Entwicklung\C#\LosslessFileCopy\LosslessFileCopy\obj\Debug\LosslessFileCopy.Form1.resources
+D:\Daten\Petzoldt\Pascal\Entwicklung\C#\LosslessFileCopy\LosslessFileCopy\obj\Debug\LosslessFileCopy.Properties.Resources.resources
+D:\Daten\Petzoldt\Pascal\Entwicklung\C#\LosslessFileCopy\LosslessFileCopy\obj\Debug\LosslessFileCopy.csproj.GenerateResource.Cache
+D:\Daten\Petzoldt\Pascal\Entwicklung\C#\LosslessFileCopy\LosslessFileCopy\obj\Debug\LosslessFileCopy.exe
+D:\Daten\Petzoldt\Pascal\Entwicklung\C#\LosslessFileCopy\LosslessFileCopy\obj\Debug\LosslessFileCopy.pdb
