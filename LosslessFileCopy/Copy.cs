@@ -56,6 +56,7 @@ namespace LosslessFileCopy
                 try
                 {
                     thread.Abort();
+                    Thread.Sleep(500);
                 }
                 catch { }
             }
@@ -67,10 +68,21 @@ namespace LosslessFileCopy
         {
             long procLen = 0;
             long offset = 0;
-
+                 
             if(type == CopyType.Continue)
             {
                 offset = ((FileInfo)remote.Info).Length;
+                if(!isAbroadFileOk())
+                {
+                   offset =  offset - 100;
+                   var ffs = ((FileInfo)remote.Info).Open(FileMode.Open,FileAccess.ReadWrite);
+                   Console.WriteLine("Last 100bytes of file corrupt. Overrite last 100b!");
+                   ffs.SetLength(Math.Max(0, ((FileInfo)remote.Info).Length - 100));
+
+                   ffs.Close();
+
+                }
+
                 procLen = offset;
             }
              
@@ -146,6 +158,7 @@ namespace LosslessFileCopy
 
                     if (File.Exists(remPath))
                     {
+                        
                         fs = new FileStream(remPath, FileMode.Append, FileAccess.Write);
 
                     }
@@ -154,16 +167,13 @@ namespace LosslessFileCopy
                         fs = new FileStream(remPath, FileMode.CreateNew, FileAccess.Write);
 
                     }
-                    //Program.hasUpload = true;
-
-                    //Form1._form.tbLog.AppendText(Environment.NewLine + "Write File Bytes");
-
-
+                   
+               
+               
                     fs.Write(b, 0, b.Length);
 
                     fs.Close();
-                //    Application.DoEvents();
-                  //  Form1._form.Invalidate();
+               
 
                 }
             }
@@ -171,7 +181,7 @@ namespace LosslessFileCopy
             {
                 if (fs != null) fs.Close();
                 Console.WriteLine(ex.ToString());
-
+                Application.ExitThread();
              //  return false;
             } 
 
@@ -197,6 +207,39 @@ namespace LosslessFileCopy
                 fileStream.Close();
             }
             return buffer;
+        }
+
+        public bool isAbroadFileOk()
+        {
+            FileInfo sFi = (FileInfo)mInputPath.Info;
+            FileInfo dFi = (FileInfo)mDesinationPath.Info;
+            long offset = dFi.Length - 100;
+            if (offset < 0) offset = 0;
+          var sFiL =  sFi.OpenRead();
+          var dFiL = dFi.OpenRead();  
+                byte[] input = new byte[100];
+            byte[] output = new byte[100];
+
+            sFiL.Seek(offset, SeekOrigin.Begin);
+           int count1  =     sFiL.Read(input, 0, 100);
+                     dFiL.Seek(offset, SeekOrigin.Begin);
+                     int count2 = dFiL.Read(output, 0, 100);
+                     dFiL.Close();
+                     sFiL.Close();
+
+            if(count1==count2)
+            {
+                for (int i = 0; i < count1; i++)
+                {
+                     if(input[i] != output[i])
+                     {
+                         return false;
+                     }
+                }
+
+                    return true;
+            }
+            return false;
         }
     }
 

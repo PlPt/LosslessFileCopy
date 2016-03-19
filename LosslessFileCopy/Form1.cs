@@ -66,7 +66,10 @@ namespace LosslessFileCopy
                     {
                         if (MessageBox.Show("File already exists and seems to be incomplete.\n Do you want to continue copy?", "COPY", MessageBoxButtons.YesNo) == DialogResult.Yes)
                         {
+
                            c=  new Copy(CopyType.Continue, mInputPath, remInfo);
+
+                         
                         }
                     }
                     else
