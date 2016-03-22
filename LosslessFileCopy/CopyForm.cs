@@ -11,13 +11,13 @@ using System.Windows.Forms;
 
 namespace LosslessFileCopy
 {
-    public partial class Form1 : Form
+    public partial class CopyForm : Form
     {
-        public Form1()
+        public CopyForm()
         {
             InitializeComponent();
         }
-        public static Form1 _form;
+        public static CopyForm _form;
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -98,31 +98,39 @@ namespace LosslessFileCopy
                 c.ProgressUpdate += new EventHandler<CopyProgressChangedEventArgs>((s, ev) =>
                 {
 
-                    progressBar1.Invoke((MethodInvoker)(() =>
+                    pB_CopyProcess.Invoke((MethodInvoker)(() =>
                     {
 
-                        progressBar1.Value = ev.copyElement.Status.percent;
+                        pB_CopyProcess.Value = ev.copyElement.Status.percent;
 
-                        using (Graphics gr = progressBar1.CreateGraphics())
+                        using (Graphics gr = pB_CopyProcess.CreateGraphics())
                         {
                             gr.DrawString(ev.copyElement.Status.percent.ToString() + "%",
                                 SystemFonts.DefaultFont,
                                 Brushes.Black,
-                                new PointF(progressBar1.Width / 2 - (gr.MeasureString(ev.copyElement.Status.percent.ToString() + "%",
+                                new PointF(pB_CopyProcess.Width / 2 - (gr.MeasureString(ev.copyElement.Status.percent.ToString() + "%",
                                     SystemFonts.DefaultFont).Width / 2.0F),
-                                progressBar1.Height / 2 - (gr.MeasureString(ev.copyElement.Status.percent.ToString() + "%",
+                                pB_CopyProcess.Height / 2 - (gr.MeasureString(ev.copyElement.Status.percent.ToString() + "%",
                                     SystemFonts.DefaultFont).Height / 2.0F)));
                         }
 
                     }));
-                    tbLog.Invoke((MethodInvoker)(() => tbLog.AppendText(Environment.NewLine + ev.copyElement.Status.ToString())));
+                    tbLog.Invoke((MethodInvoker)(() => tbLog.Text=(ev.copyElement.Status.ToString())));
                     //  tbLog.AppendText(Environment.NewLine + ev.copyElement.Status.ToString());
 
                 });
             }
 
+            c.Finished += new EventHandler<CopyProgressChangedEventArgs>((ss,ee)  =>
+                {
+                  tbLog.Invoke((MethodInvoker)(() =>
+                    {  tbLog.Text = string.Format("Copied {0} in {1:hh\\:mm\\:ss}h with {2}",ee.copyElement.Status.TotalMb,ee.copyElement.Status.runningTime,ee.copyElement.Status.MBSpeed);
+                    }));
+                }) ;
             if(c!=null)
             c.start();
+
+            
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -136,15 +144,22 @@ namespace LosslessFileCopy
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
-            try
+            if (c != null)
             {
-                int i = int.Parse(textBox1.Text);
-                c.packetSize = i*1024*1024;
-                c.spanStack.Clear();
+                try
+                {
+                    int i = int.Parse(textBox1.Text);
+                    c.packetSize = i * 1024 * 1024;
+                    c.spanStack.Clear();
+                }
+                catch
+                {
+                    textBox1.Text = (c.packetSize / 1024 / 1024).ToString();
+                }
             }
-            catch
+            else
             {
-               textBox1.Text = (c.packetSize /1024 /1024).ToString();
+                textBox1.Text = "15";
             }
         }
     } 

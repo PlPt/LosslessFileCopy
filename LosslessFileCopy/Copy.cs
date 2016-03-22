@@ -18,7 +18,7 @@ namespace LosslessFileCopy
         public CopyStatus Status;
         DateTime started;
         public EventHandler<CopyProgressChangedEventArgs> ProgressUpdate;
-        public EventHandler<EventArgs> Finished;
+        public EventHandler<CopyProgressChangedEventArgs> Finished;
         public Copy(CopyType type, Path source, Path remote)
         {
 
@@ -63,132 +63,158 @@ namespace LosslessFileCopy
         }
 
        public  long packetSize = 15*1024*1024;
+        public static int maxRetries = 4;
+        public int retries =0;
         public Stack<TimeSpan> spanStack = new Stack<TimeSpan>();
         public void copy(CopyType type,Path source,Path remote,string remPath="")
         {
             long procLen = 0;
             long offset = 0;
-                 
-            if(type == CopyType.Continue)
-            {
-                offset = ((FileInfo)remote.Info).Length;
-                if(!isAbroadFileOk())
-                {
-                   offset =  offset - 100;
-                   var ffs = ((FileInfo)remote.Info).Open(FileMode.Open,FileAccess.ReadWrite);
-                   Console.WriteLine("Last 100bytes of file corrupt. Overrite last 100b!");
-                   ffs.SetLength(Math.Max(0, ((FileInfo)remote.Info).Length - 100));
-
-                   ffs.Close();
-
-                }
-
-                procLen = offset;
-            }
-             
-
-              FileInfo sourceInfo = source.Info as FileInfo;
-            if ((sourceInfo.Length - procLen) < packetSize)
-            {
-                packetSize = (sourceInfo.Length - procLen);
-            }
-            
-             Status = new CopyStatus(procLen,sourceInfo.Length, Convert.ToInt32((((float)procLen / sourceInfo.Length) * 100)))  ;
-
-            long loop = ((sourceInfo.Length - offset) / packetSize) + 1;
-
-            FileStream fs = null;
-            
-            if(type!= CopyType.CreateNew)
-            {
-                remPath = remote.FullPath;
-            }
-            
-            
-
-           // Form1._form.tbLog.AppendText(string.Format("Uploading {0} to {1}", source.FullPath, remote.FullPath));
-            DateTime loopTime = DateTime.Now;
             try
             {
-                for (long i = 0; i < loop; i++)
+                bool success = false;
+                do
                 {
 
-                    if ((sourceInfo.Length - procLen) < packetSize)
+                    if(retries>=1)
                     {
-                        packetSize = (sourceInfo.Length - procLen);
+                        Console.WriteLine(retries + ". retry");
+                    }
+                if (type == CopyType.Continue)
+                {
+                    offset = ((FileInfo)remote.Info).Length;
+                    if (!isAbroadFileOk())
+                    {
+                        offset = offset - 100;
+                        var ffs = ((FileInfo)remote.Info).Open(FileMode.Open, FileAccess.ReadWrite);
+                        Console.WriteLine("Last 100bytes of file corrupt. Overrite last 100b!");
+                        ffs.SetLength(Math.Max(0, ((FileInfo)remote.Info).Length - 100));
+
+                        ffs.Close();
+
                     }
 
+                    procLen = offset;
+                }
 
-             
 
-                      TimeSpan elapsedTime = DateTime.Now - started;
-                      TimeSpan loopTt = DateTime.Now - loopTime;
-                    if(spanStack.Count>8)
+                FileInfo sourceInfo = source.Info as FileInfo;
+                if ((sourceInfo.Length - procLen) < packetSize)
+                {
+                    packetSize = (sourceInfo.Length - procLen);
+                }
+
+                Status = new CopyStatus(procLen, sourceInfo.Length, Convert.ToInt32((((float)procLen / sourceInfo.Length) * 100)));
+
+                long loop = ((sourceInfo.Length - offset) / packetSize) + 1;
+
+                FileStream fs = null;
+
+                if (type != CopyType.CreateNew)
+                {
+                    remPath = remote.FullPath;
+                }
+
+
+
+                
+                DateTime loopTime = DateTime.Now;
+               
+
+                
+                try
+                {
+                    for (long i = 0; i < loop; i++)
                     {
-                        spanStack.Clear();
-                    }
-                      spanStack.Push(loopTt);
-                      double avTime = spanStack.Average(x => x.TotalSeconds);
-                      loopTime = DateTime.Now;
-                      TimeSpan estimatedTime = new TimeSpan(0, 0, 0);     //(sourceInfo.Length - procLen) /   ((double)procLen / elapsedTime.TotalSeconds)
-                try{ 
-                    long bytesRemaining = (sourceInfo.Length - procLen) ;
-                    double packetsCount = bytesRemaining / packetSize;
-                    estimatedTime = TimeSpan.FromSeconds(packetsCount * avTime);
-                }catch{}
 
-                      double speed = packetSize / avTime;
-                      Status.Update(procLen, sourceInfo.Length, Convert.ToInt32((((float)procLen / sourceInfo.Length) * 100)), estimatedTime, speed);
-                     
-                    if(ProgressUpdate !=null )
-                    {
+                        if ((sourceInfo.Length - procLen) < packetSize)
+                        {
+                            packetSize = (sourceInfo.Length - procLen);
+                        }
+
+
+
+
+                        TimeSpan elapsedTime = DateTime.Now - started;
+                        Status.runningTime = elapsedTime;
+                        TimeSpan loopTt = DateTime.Now - loopTime;
+                        if (spanStack.Count > 8)
+                        {
+                            spanStack.Clear();
+                        }
+                        spanStack.Push(loopTt);
+                        double avTime = spanStack.Average(x => x.TotalSeconds);
+                        loopTime = DateTime.Now;
+                        TimeSpan estimatedTime = new TimeSpan(0, 0, 0);     //(sourceInfo.Length - procLen) /   ((double)procLen / elapsedTime.TotalSeconds)
                         try
                         {
-                            ProgressUpdate(this, new CopyProgressChangedEventArgs(this));
+                            long bytesRemaining = (sourceInfo.Length - procLen);
+                            double packetsCount = bytesRemaining / packetSize;
+                            estimatedTime = TimeSpan.FromSeconds(packetsCount * avTime);
                         }
-                        catch(ObjectDisposedException odex)
+                        catch { }
+
+                        double speed = packetSize / avTime;
+                        Status.Update(procLen, sourceInfo.Length, Convert.ToInt32((((float)procLen / sourceInfo.Length) * 100)), estimatedTime, speed);
+
+                        if (ProgressUpdate != null)
                         {
-                            Console.WriteLine("Update Object disposed");
+                            try
+                            {
+                                ProgressUpdate(this, new CopyProgressChangedEventArgs(this));
+                            }
+                            catch (ObjectDisposedException odex)
+                            {
+                                Console.WriteLine("Update Object disposed; " + odex.Message);
+                            }
                         }
+
+                        byte[] b = ReadFileBytes(packetSize, procLen);
+                        procLen += b.Length;
+
+
+                        if (File.Exists(remPath))
+                        {
+
+                            fs = new FileStream(remPath, FileMode.Append, FileAccess.Write);
+
+                        }
+                        else
+                        {
+                            fs = new FileStream(remPath, FileMode.CreateNew, FileAccess.Write);
+
+                        }
+
+
+
+                        fs.Write(b, 0, b.Length);
+
+                        fs.Close();
+                       
+
                     }
+                    success = true;
+                }
+                catch (Exception ex)
+                {
+                    if (fs != null) fs.Close();
+                    Console.WriteLine(ex.ToString());
+                    Application.ExitThread();
+                    success=                     false;
+                }
+                retries++;
+                }
+                while(!success && retries<=maxRetries);
 
-                    byte[] b = ReadFileBytes(packetSize, procLen);
-                    procLen += b.Length;
 
-
-                    if (File.Exists(remPath))
-                    {
-                        
-                        fs = new FileStream(remPath, FileMode.Append, FileAccess.Write);
-
-                    }
-                    else
-                    {
-                        fs = new FileStream(remPath, FileMode.CreateNew, FileAccess.Write);
-
-                    }
-                   
-               
-               
-                    fs.Write(b, 0, b.Length);
-
-                    fs.Close();
-               
-
+                if (Finished != null)
+                {
+                    Finished(this, new CopyProgressChangedEventArgs(this));
                 }
             }
-            catch (Exception ex)
+            catch(Exception xx)
             {
-                if (fs != null) fs.Close();
-                Console.WriteLine(ex.ToString());
-                Application.ExitThread();
-             //  return false;
-            } 
-
-
-            if(Finished !=null)
-            {
-                Finished(this, null);
+                Console.WriteLine(xx.ToString());
             }
         }
         public byte[] ReadFileBytes(long len, long offset)
@@ -307,6 +333,7 @@ namespace LosslessFileCopy
         public long totalBytes;
         public int percent;
         public TimeSpan estimatedTime;
+        public TimeSpan runningTime;
         public double speed;
 
         public String ProcessedMb
@@ -354,12 +381,12 @@ namespace LosslessFileCopy
 
         public override string ToString()
         {
-            return string.Format("{0} of {1}  Speed: {2};  Percent: {3}%  estTime: {4:hh\\:mm\\:ss}", ProcessedMb, TotalMb, MBSpeed, percent, estimatedTime);
+            return string.Format("{0} of {1}  Speed: {2};  Percent: {3}%  estTime: {4:hh\\:mm\\:ss}  runningTime: {5:hh\\:mm\\:ss}", ProcessedMb, TotalMb, MBSpeed, percent, estimatedTime,runningTime);
         }
     }
     class CopyProgressChangedEventArgs : EventArgs
     {
-        public String logLine;
+    //    public String logLine;
         public Copy copyElement;
 
         public CopyProgressChangedEventArgs(Copy cElem)
