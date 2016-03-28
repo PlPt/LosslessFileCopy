@@ -12,6 +12,7 @@ namespace LosslessFileCopy
     public enum CopyType { Overrite,Continue,CreateNew };
     class Copy
     {
+        public static int DefaultPacketSize = 15 * 1024 * 1024;
         Path mInputPath;
         Path mDesinationPath;
         CopyType type;
@@ -62,7 +63,7 @@ namespace LosslessFileCopy
             }
         }
 
-       public  long packetSize = 15*1024*1024;
+       public  long packetSize = DefaultPacketSize;
         public static int maxRetries = 4;
         public int retries =0;
         public Stack<TimeSpan> spanStack = new Stack<TimeSpan>();

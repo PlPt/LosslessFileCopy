@@ -27,9 +27,15 @@ namespace LosslessFileCopy
 
         private void button1_Click(object sender, EventArgs e)
         {
-            //new Copy(@"F:\Predators.m2t", @"D:\temp\ddd");
 
-            analyze(tbPathInput.Text,tbPathDestination.Text);
+            if (!tbPathInput.Text.Equals(string.Empty) && !tbPathDestination.Text.Equals(string.Empty))
+            {
+                analyze(tbPathInput.Text, tbPathDestination.Text);
+            }
+            else
+            {
+                MessageBox.Show("Input or Destination Path is empty!","Lossless File Copy");
+            }
           
 
         }
@@ -124,7 +130,9 @@ namespace LosslessFileCopy
             c.Finished += new EventHandler<CopyProgressChangedEventArgs>((ss,ee)  =>
                 {
                   tbLog.Invoke((MethodInvoker)(() =>
-                    {  tbLog.Text = string.Format("Copied {0} in {1:hh\\:mm\\:ss}h with {2}",ee.copyElement.Status.TotalMb,ee.copyElement.Status.runningTime,ee.copyElement.Status.MBSpeed);
+                    {
+                        pB_CopyProcess.Value = 100;
+                        tbLog.Text = string.Format("Copied {0} in {1:hh\\:mm\\:ss}h with {2}",ee.copyElement.Status.TotalMb,ee.copyElement.Status.runningTime,ee.copyElement.Status.MBSpeed);
                     }));
                 }) ;
             if(c!=null)
@@ -148,18 +156,55 @@ namespace LosslessFileCopy
             {
                 try
                 {
-                    int i = int.Parse(textBox1.Text);
+                    int i = int.Parse(tbPacketSize.Text);
                     c.packetSize = i * 1024 * 1024;
                     c.spanStack.Clear();
                 }
                 catch
                 {
-                    textBox1.Text = (c.packetSize / 1024 / 1024).ToString();
+                    tbPacketSize.Text = (c.packetSize / 1024 / 1024).ToString();
                 }
             }
             else
             {
-                textBox1.Text = "15";
+              
+                try
+                {
+                    int i = int.Parse(tbPacketSize.Text);
+                    Copy.DefaultPacketSize = i * 1024 * 1024;
+                    
+                }
+                catch
+                {
+                    tbPacketSize.Text = (Copy.DefaultPacketSize/ 1024 / 1024).ToString();
+                }
+            }
+        }
+
+        private void btnSelectPathSource_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog open = new OpenFileDialog();
+            open.InitialDirectory = Environment.CurrentDirectory;
+            var dlg = open.ShowDialog();
+
+            if(dlg==DialogResult.OK)
+            {
+                string path = open.FileName;
+                tbPathInput.Text = path;
+            }
+        }
+
+        private void btnSelectPathDest_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialogEx folder = new FolderBrowserDialogEx();
+            folder.NewStyle = true;
+            folder.RootFolder = Environment.SpecialFolder.Desktop;
+            folder.ShowEditBox = true;
+            var dlg = folder.ShowDialog();
+            if(dlg == System.Windows.Forms.DialogResult.OK)
+            {
+                string path = folder.SelectedPath;
+                tbPathDestination.Text = path;
             }
         }
     } 
