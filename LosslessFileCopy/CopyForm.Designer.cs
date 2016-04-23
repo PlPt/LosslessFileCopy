@@ -39,6 +39,7 @@
             this.lblPacketSizeUnit = new System.Windows.Forms.Label();
             this.btnSelectPathSource = new System.Windows.Forms.Button();
             this.btnSelectPathDest = new System.Windows.Forms.Button();
+            this.lblActiveFile = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // btnCopy
@@ -127,11 +128,22 @@
             this.btnSelectPathDest.UseVisualStyleBackColor = true;
             this.btnSelectPathDest.Click += new System.EventHandler(this.btnSelectPathDest_Click);
             // 
+            // lblActiveFile
+            // 
+            this.lblActiveFile.AutoSize = true;
+            this.lblActiveFile.Location = new System.Drawing.Point(51, 173);
+            this.lblActiveFile.Name = "lblActiveFile";
+            this.lblActiveFile.Size = new System.Drawing.Size(36, 13);
+            this.lblActiveFile.TabIndex = 10;
+            this.lblActiveFile.Text = "_copy";
+            this.lblActiveFile.Visible = false;
+            // 
             // CopyForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(785, 289);
+            this.Controls.Add(this.lblActiveFile);
             this.Controls.Add(this.btnSelectPathDest);
             this.Controls.Add(this.btnSelectPathSource);
             this.Controls.Add(this.lblPacketSizeUnit);
@@ -164,6 +176,7 @@
         private System.Windows.Forms.Label lblPacketSizeUnit;
         private System.Windows.Forms.Button btnSelectPathSource;
         private System.Windows.Forms.Button btnSelectPathDest;
+        private System.Windows.Forms.Label lblActiveFile;
     }
 }
 

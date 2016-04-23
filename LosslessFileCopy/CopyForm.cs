@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -40,12 +41,15 @@ namespace LosslessFileCopy
 
         }
 
-        Copy c = null;
-        void analyze(String path,String path2)
+       // Copy c = null;
+        int numFiles = 0;
+        int count = 0; 
+        List<Copy> copyList = new List<Copy>();
+        void analyze(String path, String path2)
         {
-          
-           Path mInputPath = new Path(path);
-           Path mDesinationPath = new Path(path2);
+
+            Path mInputPath = new Path(path);
+            Path mDesinationPath = new Path(path2);
 
 
             if (mInputPath.PathType == PathType.File && mDesinationPath.PathType == PathType.Directory)
@@ -65,7 +69,7 @@ namespace LosslessFileCopy
                         {
                             //Overrite
                             File.Delete(remInfo.FullPath);
-                            c = new Copy(CopyType.CreateNew, mInputPath, mDesinationPath);
+                            copyList.Add(new Copy(CopyType.CreateNew, mInputPath, mDesinationPath));
                         }
                     }
                     else if (source.Length > ((FileInfo)remInfo.Info).Length)
@@ -73,9 +77,9 @@ namespace LosslessFileCopy
                         if (MessageBox.Show("File already exists and seems to be incomplete.\n Do you want to continue copy?", "COPY", MessageBoxButtons.YesNo) == DialogResult.Yes)
                         {
 
-                           c=  new Copy(CopyType.Continue, mInputPath, remInfo);
+                            copyList.Add(new Copy(CopyType.Continue, mInputPath, remInfo));
 
-                         
+
                         }
                     }
                     else
@@ -90,7 +94,7 @@ namespace LosslessFileCopy
                 {
                     Console.WriteLine("File does not exists in dir");
 
-                    c = new Copy(CopyType.CreateNew, mInputPath, mDesinationPath);
+                    copyList.Add(new Copy(CopyType.CreateNew, mInputPath, mDesinationPath));
                 }
 
             }
@@ -98,85 +102,135 @@ namespace LosslessFileCopy
             {
                 Console.WriteLine("Have to Copy Directory to Directory");
 
+                DirectoryInfo dirInfo = (DirectoryInfo)mInputPath.Info;
+                List<FileInfo> info = dirInfo.GetFiles().ToList();
+
+                foreach (var item in info)
+                {
+                    copyList.Add(new Copy(CopyType.CreateNew, new Path(item.FullName), mDesinationPath));
+                }
+
+
             }
-            if (c != null)
+
+            bool isFirst = true;
+            numFiles = copyList.Count;
+
+            if(copyList.Count>1)
             {
-                c.ProgressUpdate += new EventHandler<CopyProgressChangedEventArgs>((s, ev) =>
-                {
-
-                    pB_CopyProcess.Invoke((MethodInvoker)(() =>
-                    {
-
-                        pB_CopyProcess.Value = ev.copyElement.Status.percent;
-
-                        using (Graphics gr = pB_CopyProcess.CreateGraphics())
-                        {
-                            gr.DrawString(ev.copyElement.Status.percent.ToString() + "%",
-                                SystemFonts.DefaultFont,
-                                Brushes.Black,
-                                new PointF(pB_CopyProcess.Width / 2 - (gr.MeasureString(ev.copyElement.Status.percent.ToString() + "%",
-                                    SystemFonts.DefaultFont).Width / 2.0F),
-                                pB_CopyProcess.Height / 2 - (gr.MeasureString(ev.copyElement.Status.percent.ToString() + "%",
-                                    SystemFonts.DefaultFont).Height / 2.0F)));
-                        }
-
-                    }));
-                    tbLog.Invoke((MethodInvoker)(() => tbLog.Text=(ev.copyElement.Status.ToString())));
-                    //  tbLog.AppendText(Environment.NewLine + ev.copyElement.Status.ToString());
-
-                });
+                lblActiveFile.Visible = true;
             }
 
-            c.Finished += new EventHandler<CopyProgressChangedEventArgs>((ss,ee)  =>
+            foreach (Copy c in copyList)
+            {
+                if (c != null)
                 {
-                  tbLog.Invoke((MethodInvoker)(() =>
+                    c.ProgressUpdate += new EventHandler<CopyProgressChangedEventArgs>((s, ev) =>
                     {
-                        pB_CopyProcess.Value = 100;
-                        tbLog.Text = string.Format("Copied {0} in {1:hh\\:mm\\:ss}h with {2}",ee.copyElement.Status.TotalMb,ee.copyElement.Status.runningTime,ee.copyElement.Status.MBSpeed);
-                    }));
-                }) ;
-            if(c!=null)
-            c.start();
 
-            
+                        pB_CopyProcess.Invoke((MethodInvoker)(() =>
+                        {
+
+                            pB_CopyProcess.Value = ev.copyElement.Status.percent;
+
+                            using (Graphics gr = pB_CopyProcess.CreateGraphics())
+                            {
+                                gr.DrawString(ev.copyElement.Status.percent.ToString() + "%",
+                                    SystemFonts.DefaultFont,
+                                    Brushes.Black,
+                                    new PointF(pB_CopyProcess.Width / 2 - (gr.MeasureString(ev.copyElement.Status.percent.ToString() + "%",
+                                        SystemFonts.DefaultFont).Width / 2.0F),
+                                    pB_CopyProcess.Height / 2 - (gr.MeasureString(ev.copyElement.Status.percent.ToString() + "%",
+                                        SystemFonts.DefaultFont).Height / 2.0F)));
+                            }
+
+                        }));
+                        tbLog.Invoke((MethodInvoker)(() => tbLog.Text = (ev.copyElement.Status.ToString())));
+                        //  tbLog.AppendText(Environment.NewLine + ev.copyElement.Status.ToString());
+
+                    });
+                }
+
+                c.Finished += new EventHandler<CopyProgressChangedEventArgs>((ss, ee) =>
+                    {
+                        tbLog.Invoke((MethodInvoker)(() =>
+                          {
+                              pB_CopyProcess.Value = 100;
+                              tbLog.Text = string.Format("Copied {0} in {1:hh\\:mm\\:ss}h with {2}", ee.copyElement.Status.TotalMb, ee.copyElement.Status.runningTime, ee.copyElement.Status.MBSpeed);
+
+                              Thread.Sleep(500);
+
+                              foreach (Copy cp in copyList)
+                              {
+                                  if (cp != null && cp.Status==null)
+                                  {
+
+                                      cp.start();
+                                      count++;
+                                      
+                                      break;
+                                  }
+
+                              }
+
+                              lblActiveFile.Text = string.Format("Copy {0}/{1}",count,numFiles);
+
+
+                          }));
+                    });
+                if (c != null && isFirst)
+                {
+                    c.start();
+                    count++;
+                    isFirst = false;
+                    lblActiveFile.Text = string.Format("Copy {0}/{1}", count, numFiles);
+                }
+
+
+            }
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            
-            if(c!=null)
+            foreach (Copy c in copyList)
             {
-                c.Stop();
+                if (c != null)
+                {
+                    c.Stop();
+                }
             }
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
-            if (c != null)
+            foreach (Copy c in copyList)
             {
-                try
+                if (c != null)
                 {
-                    int i = int.Parse(tbPacketSize.Text);
-                    c.packetSize = i * 1024 * 1024;
-                    c.spanStack.Clear();
+                    try
+                    {
+                        int i = int.Parse(tbPacketSize.Text);
+                        c.packetSize = i * 1024 * 1024;
+                        c.spanStack.Clear();
+                    }
+                    catch
+                    {
+                        tbPacketSize.Text = (c.packetSize / 1024 / 1024).ToString();
+                    }
                 }
-                catch
+                else
                 {
-                    tbPacketSize.Text = (c.packetSize / 1024 / 1024).ToString();
-                }
-            }
-            else
-            {
-              
-                try
-                {
-                    int i = int.Parse(tbPacketSize.Text);
-                    Copy.DefaultPacketSize = i * 1024 * 1024;
-                    
-                }
-                catch
-                {
-                    tbPacketSize.Text = (Copy.DefaultPacketSize/ 1024 / 1024).ToString();
+
+                    try
+                    {
+                        int i = int.Parse(tbPacketSize.Text);
+                        Copy.DefaultPacketSize = i * 1024 * 1024;
+
+                    }
+                    catch
+                    {
+                        tbPacketSize.Text = (Copy.DefaultPacketSize / 1024 / 1024).ToString();
+                    }
                 }
             }
         }

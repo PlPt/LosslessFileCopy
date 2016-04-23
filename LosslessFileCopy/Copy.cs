@@ -105,6 +105,10 @@ namespace LosslessFileCopy
                     packetSize = (sourceInfo.Length - procLen);
                 }
 
+                    if(packetSize==0)
+                    {
+                        packetSize = DefaultPacketSize;
+                    }
                 Status = new CopyStatus(procLen, sourceInfo.Length, Convert.ToInt32((((float)procLen / sourceInfo.Length) * 100)));
 
                 long loop = ((sourceInfo.Length - offset) / packetSize) + 1;
@@ -128,6 +132,14 @@ namespace LosslessFileCopy
                     for (long i = 0; i < loop; i++)
                     {
 
+                        if ((sourceInfo.Length - procLen) ==0 )
+                        {
+                          //  Console.WriteLine("File exist, so copy file finished");
+                            Status.finished = true;
+                            if(Finished!=null)
+                           Finished(this,new CopyProgressChangedEventArgs(this));
+                            return;
+                        }
                         if ((sourceInfo.Length - procLen) < packetSize)
                         {
                             packetSize = (sourceInfo.Length - procLen);
@@ -211,6 +223,7 @@ namespace LosslessFileCopy
                 if (Finished != null)
                 {
                     Finished(this, new CopyProgressChangedEventArgs(this));
+                    Status.finished = true;
                 }
             }
             catch(Exception xx)
@@ -336,6 +349,7 @@ namespace LosslessFileCopy
         public TimeSpan estimatedTime;
         public TimeSpan runningTime;
         public double speed;
+        public bool finished = false;
 
         public String ProcessedMb
         {
