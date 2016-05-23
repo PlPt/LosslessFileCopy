@@ -4,7 +4,7 @@ A .NET File Copy program, which can continue abroaded copy progresses.
 German Description
 ------------------------------------
 LosslessFileCopy ist wie der Name schon sagt ein copierprogramm, welches Dateien verlustlos kopieren kann.
-Während Windows gerade bei großen Dateien die über das Netzwerk ö.ä. übertragen werden, gerne mal abbricht und die angefangene kopie damit löscht, löst LosslessFileCopy dieses Problem, indem die Datei "stückchenweise" ind Datenpaketen mit standardmäßig 15mb kopiert.
+Während Windows gerade bei großen Dateien die über das Netzwerk ö.ä. übertragen werden, gerne mal abbricht und die angefangene kopie damit löscht, löst LosslessFileCopy dieses Problem, indem die Datei "stückchenweise" in Datenpaketen mit standardmäßig 15mb kopiert.
 Bricht dann eine kopie ab, greift erstmal der interne Versuchslogik und es wird versucht an der stelle weiter zu machen wo aufgehört wurde. Ist das nicht erfolgreich, bleibt die teilweise kopierte Datei auf dem Zeillaufwerk liegen. Ein erneuter manueller Start des Kopierforgangs, erkennt die angefangene Datei und kopiert an der stelle weiter, wo vorher aufgehört wurde. Damit wird vermieden, dass von 0 angefangen werden muss.
 
 Bisher unterstütze Features:
